@@ -99,21 +99,20 @@ class base {
         $idtoken = \auth_oidc\jwt::instance_from_encoded($tokenrec->idtoken);
 
         $userinfo = [
-            'lang' => 'en',
             'idnumber' => $username,
         ];
 
-        $firstname = $idtoken->claim('given_name');
+        $firstname = explode(" ", $idtoken->claim('name'))[0];
         if (!empty($firstname)) {
             $userinfo['firstname'] = $firstname;
         }
 
-        $lastname = $idtoken->claim('family_name');
+        $lastname = explode(" ", $idtoken->claim('name'))[1];
         if (!empty($lastname)) {
             $userinfo['lastname'] = $lastname;
         }
 
-        $email = $idtoken->claim('email');
+        $email = $idtoken->claim('preferred_username');
         if (!empty($email)) {
             $userinfo['email'] = $email;
         }
@@ -343,12 +342,12 @@ class base {
         $tokenrec->oidcuniqid = $oidcuniqid;
         $tokenrec->username = $username;
         $tokenrec->oidcusername = $oidcusername;
-        $tokenrec->scope = $tokenparams['scope'];
-        $tokenrec->resource = $tokenparams['resource'];
+        $tokenrec->scope = "openid";//$tokenparams['scope'];
+        $tokenrec->resource = "";//$tokenrec->scope;//$tokenparams['scope'];//$tokenparams['resource'];
         $tokenrec->authcode = $authparams['code'];
-        $tokenrec->token = $tokenparams['access_token'];
-        $tokenrec->expiry = $tokenparams['expires_on'];
-        $tokenrec->refreshtoken = $tokenparams['refresh_token'];
+        $tokenrec->token = $tokenparams['id_token'];//$tokenparams['refresh_token'];
+        $tokenrec->expiry = $idtoken->claim('exp'); // 0;//$tokenparams['expires_on'];
+        $tokenrec->refreshtoken = "";//$tokenparams['refresh_token'];
         $tokenrec->idtoken = $tokenparams['id_token'];
         $tokenrec->id = $DB->insert_record('auth_oidc_token', $tokenrec);
         return $tokenrec;
@@ -366,9 +365,9 @@ class base {
         $tokenrec = new \stdClass;
         $tokenrec->id = $tokenid;
         $tokenrec->authcode = $authparams['code'];
-        $tokenrec->token = $tokenparams['access_token'];
-        $tokenrec->expiry = $tokenparams['expires_on'];
-        $tokenrec->refreshtoken = $tokenparams['refresh_token'];
+        $tokenrec->token = $tokenparams['id_token'];
+        $tokenrec->expiry = $idtoken->claim('exp');
+        //$tokenrec->refreshtoken = $tokenparams['refresh_token'];
         $tokenrec->idtoken = $tokenparams['id_token'];
         $DB->update_record('auth_oidc_token', $tokenrec);
     }

@@ -62,7 +62,7 @@ class oidcclient {
         $this->clientid = $id;
         $this->clientsecret = $secret;
         $this->redirecturi = $redirecturi;
-        $this->resource = (!empty($resource)) ? $resource : 'https://graph.windows.net';
+        //$this->resource = (!empty($resource)) ? $resource : 'https://graph.windows.net';
     }
 
     /**
@@ -118,6 +118,10 @@ class oidcclient {
     public function get_endpoint($endpoint) {
         return (isset($this->endpoints[$endpoint])) ? $this->endpoints[$endpoint] : null;
     }
+	
+	
+    private static $scopes = array("openid");//, 
+                                   //"https://outlook.office.com/mail.read");
 
     /**
      * Get an array of authorization request parameters.
@@ -127,12 +131,13 @@ class oidcclient {
     protected function getauthrequestparams($promptlogin = false, array $stateparams = array()) {
         $nonce = 'N'.uniqid();
         $params = [
-            'response_type' => 'code',
             'client_id' => $this->clientid,
-            'scope' => 'openid profile email',
+			'redirect_uri' => $this->redirecturi,
+            'response_type' => 'code',
+			'scope' => implode(" ", self::$scopes),
             'nonce' => $nonce,
             'response_mode' => 'form_post',
-            'resource' => $this->resource,
+            //'resource' => $this->resource,
             'state' => $this->getnewstate($nonce, $stateparams),
         ];
         if ($promptlogin === true) {
@@ -197,8 +202,8 @@ class oidcclient {
             'grant_type' => 'password',
             'username' => $username,
             'password' => $password,
-            'scope' => 'openid profile email',
-            'resource' => $this->resource,
+            'scope' => 'implode(" ", self::$scopes)',
+           // 'resource' => $this->resource,
             'client_id' => $this->clientid,
             'client_secret' => $this->clientsecret,
         ];
@@ -224,11 +229,12 @@ class oidcclient {
         }
 
         $params = [
-            'client_id' => $this->clientid,
-            'client_secret' => $this->clientsecret,
             'grant_type' => 'authorization_code',
             'code' => $code,
             'redirect_uri' => $this->redirecturi,
+			'scope' => implode(" ", self::$scopes),
+            'client_id' => $this->clientid,
+            'client_secret' => $this->clientsecret,
         ];
 
         try {

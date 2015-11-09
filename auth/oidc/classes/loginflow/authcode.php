@@ -279,14 +279,14 @@ class authcode extends \auth_oidc\loginflow\base {
             $this->updatetoken($tokenrec->id, $authparams, $tokenparams);
         } else {
             // Use 'upn' if available for username (Azure-specific), or fall back to lower-case oidcuniqid.
-            $username = $idtoken->claim('upn');
+            $username = $idtoken->claim('preferred_username');
             if (empty($username)) {
                 $username = strtolower($oidcuniqid);
             }
             $tokenrec = $this->createtoken($oidcuniqid, $username, $authparams, $tokenparams, $idtoken);
         }
 
-        $existinguserparams = ['username' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
+        $existinguserparams = ['email' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
         if ($DB->record_exists('user', $existinguserparams) !== true) {
             // User does not exist. Create user if site allows, otherwise fail.
             if (empty($CFG->authpreventaccountcreation)) {
@@ -297,13 +297,19 @@ class authcode extends \auth_oidc\loginflow\base {
                 $eventdata = ['other' => ['username' => $username, 'reason' => $failurereason]];
                 $event = \core\event\user_login_failed::create($eventdata);
                 $event->trigger();
-                throw new \moodle_exception('errorauthloginfailednouser', 'auth_oidc');
+                throw new \moodle_exception('errorauthloginfailed', 'auth_oidc');
+				$user = authenticate_user_login($username, null, true);
             }
         }
+        else
+        {
+			// User exist, get data to login
+			$user = get_complete_user_data('email', $username, $CFG->mnet_localhost_id);
+        }
 
-        $user = authenticate_user_login($username, null, true);
+        
         if (empty($user)) {
-            throw new \moodle_exception('errorauthloginfailednouser', 'auth_oidc');
+            throw new \moodle_exception('errorauthloginfailed', 'auth_oidc');
         }
 
         complete_user_login($user);
